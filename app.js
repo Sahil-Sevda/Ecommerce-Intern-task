@@ -1,12 +1,16 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-require('dotenv').config;
+require('dotenv').config();
 const { errorhandling } = require('./Middleware/errorHandling.js')
+const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 
 app.use(cors());
 app.use(express.json());
 app.use(errorhandling);
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser())
 
 const categoriesRoutes = require('./routes/categories');
 const productsRoutes = require('./routes/products');

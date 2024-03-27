@@ -1,0 +1,11 @@
+2024-03-27T11:07:27.777Z -404- Password length should be >8
+2024-03-27T11:07:33.965Z -404- Password must contain at least one special character
+2024-03-27T11:22:02.045Z -404- email does not exist
+2024-03-27T11:25:01.638Z -404- email does not exist
+2024-03-27T11:25:18.236Z -500- Expected "options" to be a plain object.
+2024-03-27T11:28:03.861Z -404- email does not exist
+2024-03-27T11:37:11.184Z -404- email does not exist
+2024-03-27T11:37:31.780Z -500- Expected "options" to be a plain object.
+2024-03-27T11:41:59.057Z -500- Expected "options" to be a plain object.
+2024-03-27T11:42:19.653Z -500- Expected "options" to be a plain object.
+2024-03-27T12:20:05.765Z -401- secret or public key must be provided

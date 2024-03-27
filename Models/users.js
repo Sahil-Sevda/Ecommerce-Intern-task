@@ -8,14 +8,23 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
+        unique:true
     },
     password: {
         type: String,
         required: true,
+        // minlength: [8, 'Password must be at least 8 characters long'],
+        // validate: {
+        //     validator: function(v) {
+        //         return /@!#/.test(v);
+        //     },
+        //     message: props => `${props.value} is not a valid password. Password must contain alphanumeric characters with only @, !, and # as special characters.`,
+        // },
     },
     phone: {
         type: String,
         required: true,
+        unique:true
     },
     isAdmin: {
         type: Boolean,

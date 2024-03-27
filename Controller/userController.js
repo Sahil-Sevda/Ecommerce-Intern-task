@@ -1,6 +1,7 @@
 const User = require('../Models/users');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator')
 require('dotenv').config()
 const secretkey = process.env.secretkey;
 const { errorhandler, successhandler } = require('./responseHandler')
@@ -12,8 +13,8 @@ const { errorhandler, successhandler } = require('./responseHandler')
  * @returns token
  */
 function generateAccessToken(id, admin) {
-	let x = jwt.sign({ userId: id,isAdmin: admin},secretkey,'1d');
-	return x;
+    let x = jwt.sign({ userId: id, isAdmin: admin }, secretkey, { expiresIn: '1d' });
+    return x;
 }
 
 /**
@@ -22,12 +23,12 @@ function generateAccessToken(id, admin) {
  * @param {Object} res The response object.
  * @param {Function} next The next middleware function.
  */
-const getusers=async (req, res,next) =>{
+const getusers = async (req, res, next) => {
     const userList = await User.find()
 
-    if(!userList) {
-       next(errorhandler('no users present', 500))
-    } 
+    if (!userList) {
+        next(errorhandler('no users present', 500))
+    }
     res.status(200).send(userList);
 }
 
@@ -37,12 +38,12 @@ const getusers=async (req, res,next) =>{
  * @param {Object} res The response object.
  * @param {Function} next The next middleware function.
  */
-const getuserbyid=async(req,res,next)=>{
+const getuserbyid = async (req, res, next) => {
     const user = await User.findById(req.params.id).select('-passwordHash');
 
-    if(!user) {
+    if (!user) {
         next(errorhandler('The user with the given ID was not found.', 500))
-    } 
+    }
     res.status(200).send(user);
 }
 
@@ -52,13 +53,18 @@ const getuserbyid=async(req,res,next)=>{
  * @param {Object} res The response object.
  * @param {Function} next The next middleware function.
  */
-const newuser=async (req,res,next)=>{
+const newuser = async (req, res, next) => {
+    let errors = validationResult(req)
+    console.log(errors)
+    if (!errors.isEmpty()) {
+        return next(errorhandler(errors.array()[0].msg, 404));
+    }
     let salt = await bcrypt.genSalt(10);
     let hashedPassword = await bcrypt.hash(req.body.password, salt);
     let user = new User({
         name: req.body.name,
         email: req.body.email,
-        password:hashedPassword,
+        password: hashedPassword,
         phone: req.body.phone,
         isAdmin: req.body.isAdmin,
         pincode: req.body.street,
@@ -67,8 +73,8 @@ const newuser=async (req,res,next)=>{
     })
     user = await user.save();
 
-    if(!user)
-    next(errorhandler('the user cannot be created!', 400))
+    if (!user)
+        next(errorhandler('the user cannot be created!', 400))
 
     res.send(user);
 }
@@ -79,11 +85,11 @@ const newuser=async (req,res,next)=>{
  * @param {Object} res The response object.
  * @param {Function} next The next middleware function.
  */
-const updateuser=async (req, res,next)=> {
+const updateuser = async (req, res, next) => {
 
     const userExist = await User.findById(req.params.id);
     let newPassword;
-    if(req.body.password) {
+    if (req.body.password) {
         let salt = await bcrypt.genSalt(10);
         newPassword = await bcrypt.hash(req.body.password, salt);
     } else {
@@ -97,8 +103,8 @@ const updateuser=async (req, res,next)=> {
         }
     )
 
-    if(!user)
-    next(errorhandler('the user cannot be updated!', 400))
+    if (!user)
+        next(errorhandler('the user cannot be updated!', 400))
 
     res.send(user);
 }
@@ -109,26 +115,32 @@ const updateuser=async (req, res,next)=> {
  * @param {Object} res The response object.
  * @param {Function} next The next middleware function.
  */
-const login=async (req,res,next) => {
+const login = async (req, res, next) => {
     try {
-		const { email, password } = req.body;
-		let obj = await User.findOne({ email: email });
-		if (obj) {
-			let passwordMatch = await bcrypt.compare(password, obj.password);
-			if (passwordMatch) {
-				res.status(200).json({ name: obj.name, message: "login successfull", success: true, token: generateAccessToken(obj._id,obj.isAdmin) });
-			} else {
+        const { email, password } = req.body;
+        console.log(email)
+        let obj = await User.findOne({ email: email });
+        if (obj) {
+            let passwordMatch = await bcrypt.compare(password, obj.password);
+            if (passwordMatch) {
+                let token = generateAccessToken(obj._id, obj.isAdmin);
+                res.cookie("token", token, {
+                    expires:new Date(Date.now() + 60 * 60 * 1000),
+                });
+                res.status(200).json({ name: obj.name, message: "login successfull", success: true, token });
+            } else {
                 next(errorhandler('invalid password', 400))
-			}
-		} else {
+            }
+        } else {
             next(errorhandler("email does not exist", 404))
 
-		}
-	} catch (error) {
+        }
+    } catch (error) {
+        console.log(error)
         next(errorhandler(error.message, 500))
 
-	}
-    
+    }
+
 }
 
 /**
@@ -137,7 +149,7 @@ const login=async (req,res,next) => {
  * @param {Object} res The response object.
  * @param {Function} next The next middleware function.
  */
-const deleteuser=async (req, res,next) => {
+const deleteuser = async (req, res, next) => {
     try {
         const user = await User.findByIdAndRemove(req.params.id);
         if (user) {
@@ -156,14 +168,20 @@ const deleteuser=async (req, res,next) => {
  * @param {Object} res The response object.
  * @param {Function} next The next middleware function.
  */
-const usercount=async (req, res,next) =>{
-    const userCount = await User.countDocuments((count) => count)
-
-    if(!userCount) {
-        next(errorhandler("empty user list", 500))
-    } 
-    res.send({
-        userCount: userCount
-    });
+const usercount = async (req, res, next) => {
+    try {
+        const userCount = await User.countDocuments();
+        
+        if (!userCount) {
+            return next(errorhandler("empty user list", 500));
+        }
+        
+        res.send({
+            userCount: userCount
+        });
+    } catch (error) {
+        return next(error);
+    }
 }
-module.exports={getusers,newuser,updateuser,deleteuser,usercount,login,getuserbyid}
+
+module.exports = { getusers, newuser, updateuser, deleteuser, usercount, login, getuserbyid }
